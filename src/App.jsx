@@ -1,12 +1,65 @@
 import{useState,useEffect}from 'react'
 import{supabase}from './supabase'
 import'./App.css'
+const PIN='1234'
 const G='#1a5c38',GOLD='#c9a84c',SAND='#f5efe0',DS='#ede4cc',W='#fff',RED='#b91c1c',TX='#1a1a1a',MU='#6b5d3f'
 const fmt=n=>(n>=0?'+$':'-$')+Math.abs(n).toFixed(2).replace(/\.00$/,'')
 const fmtA=n=>'$'+Math.abs(n).toFixed(2).replace(/\.00$/,'')
 const ini=n=>n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
 function Av({name,color,size=44}){return <div style={{width:size,height:size,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',color:W,fontWeight:600,fontSize:size/2.5,flexShrink:0}}>{ini(name)}</div>}
 function Hdr({title,sub,onBack}){return <div style={{background:G,color:W,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,position:'sticky',top:0,zIndex:100}}>{onBack?<button style={{background:'none',border:'none',color:W,fontSize:28,cursor:'pointer',padding:'0 8px 0 0',lineHeight:1}} onClick={onBack}>&#8249;</button>:<span style={{fontSize:24}}>&#9971;</span>}<div><div style={{fontSize:18,fontWeight:600}}>{title}</div>{sub&&<div style={{fontSize:11,opacity:.8,marginTop:1}}>{sub}</div>}</div></div>}
+function LoginScreen({onLogin}){
+  const [name,setName]=useState('')
+  const [pin,setPin]=useState('')
+  const [err,setErr]=useState('')
+  const [loading,setLoading]=useState(false)
+  async function handleLogin(){
+    const n=name.trim()
+    if(!n||pin.length!==4){setErr('Enter your name and the 4-digit PIN');return}
+    if(pin!==PIN){setErr('Wrong PIN — ask the group for it');return}
+    setLoading(true);setErr('')
+    const{data:existing}=await supabase.from('players').select('*').ilike('name',n).single()
+    if(existing){onLogin(existing)}
+    else{
+      const{data:created,error}=await supabase.from('players').insert([{name:n}]).select().single()
+      if(error){setErr('Something went wrong, try again');setLoading(false);return}
+      onLogin(created)
+    }
+  }
+  return(
+    <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column'}}>
+      <div style={{background:G,padding:'32px 24px 24px',textAlign:'center'}}>
+        <div style={{fontSize:52,marginBottom:8}}>&#9971;</div>
+        <div style={{color:W,fontSize:28,fontWeight:700,letterSpacing:'-0.5px'}}>Buddy Bet</div>
+        <div style={{color:'rgba(255,255,255,0.7)',fontSize:13,marginTop:4}}>Masters Weekend</div>
+      </div>
+      <div style={{padding:'32px 24px',flex:1}}>
+        <div style={{marginBottom:20}}>
+          <label style={{display:'block',fontSize:13,fontWeight:500,color:MU,marginBottom:8}}>Your first name</label>
+          <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid '+DS,borderRadius:12,fontSize:16,outline:'none',background:W,boxSizing:'border-box'}}
+            type='text' placeholder='e.g. Daniel' value={name}
+            onChange={e=>{setName(e.target.value);setErr('')}}
+            onKeyDown={e=>e.key==='Enter'&&handleLogin()}
+          />
+        </div>
+        <div style={{marginBottom:24}}>
+          <label style={{display:'block',fontSize:13,fontWeight:500,color:MU,marginBottom:8}}>Group PIN</label>
+          <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid '+DS,borderRadius:12,fontSize:22,outline:'none',background:W,boxSizing:'border-box',letterSpacing:8,textAlign:'center'}}
+            type='password' inputMode='numeric' maxLength={4} placeholder='••••' value={pin}
+            onChange={e=>{setPin(e.target.value.replace(/\D/g,'').slice(0,4));setErr('')}}
+            onKeyDown={e=>e.key==='Enter'&&handleLogin()}
+          />
+        </div>
+        {err&&<div style={{background:'#fdecea',border:'1px solid #fca5a5',borderRadius:10,padding:'10px 14px',fontSize:13,color:RED,marginBottom:16}}>{err}</div>}
+        <button style={{width:'100%',padding:14,borderRadius:12,fontSize:16,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:loading?.7:1}}
+          onClick={handleLogin} disabled={loading}>
+          {loading?'Loading...':'Enter the Club &#9971;'}
+        </button>
+        <p style={{textAlign:'center',fontSize:12,color:MU,marginTop:16}}>New here? Just enter your name and the PIN to join.</p>
+      </div>
+    </div>
+  )
+}
 export default function App(){
   const [tab,setTab]=useState('home')
   const [players,setPlayers]=useState([])
@@ -15,32 +68,40 @@ export default function App(){
   const [loading,setLoading]=useState(true)
   const [ledgerWith,setLedgerWith]=useState(null)
   const [viewProfile,setViewProfile]=useState(null)
-  useEffect(()=>{init()},[])
-  async function init(){
-    setLoading(true)
+  useEffect(()=>{checkSaved()},[])
+  async function checkSaved(){
+    const saved=localStorage.getItem('buddy_bet_me')
+    if(saved){
+      const{data}=await supabase.from('players').select('*').eq('id',saved).single()
+      if(data){setMe(data);await loadData();setLoading(false);return}
+    }
+    setLoading(false)
+  }
+  async function loadData(){
     const{data:pl}=await supabase.from('players').select('*').order('name')
     const{data:bt}=await supabase.from('bets').select('*').order('created_at',{ascending:false})
     setPlayers(pl||[]);setBets(bt||[])
-    const saved=localStorage.getItem('buddy_bet_me')
-    if(saved){const found=(pl||[]).find(p=>p.id===saved);if(found)setMe(found)}
-    setLoading(false)
+  }
+  async function handleLogin(player){
+    setMe(player);localStorage.setItem('buddy_bet_me',player.id)
+    await loadData();setLoading(false)
   }
   function betsWith(id){if(!me)return[];return bets.filter(b=>(b.challenger_id===me.id&&b.opponent_id===id)||(b.challenger_id===id&&b.opponent_id===me.id))}
   function balWith(id){let n=0;for(const b of betsWith(id)){if(b.status==='open')continue;n+=b.winner_id===me.id?b.amount:-b.amount}return n}
   function unsettled(id){let n=0;for(const b of betsWith(id)){if(b.status==='settle_later')n+=b.winner_id===me.id?b.amount:-b.amount}return n}
   function partners(){if(!me)return[];const ids=new Set();bets.forEach(b=>{if(b.challenger_id===me.id)ids.add(b.opponent_id);if(b.opponent_id===me.id)ids.add(b.challenger_id)});return players.filter(p=>ids.has(p.id))}
   if(loading)return <div style={{background:SAND,minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center'}}><div style={{fontSize:48}}>&#9971;</div><p style={{color:MU}}>Loading...</p></div></div>
-  if(!me)return <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto'}}><Hdr title="Buddy Bet"/><div style={{padding:16}}><p style={{color:MU,marginBottom:16}}>Who are you?</p>{players.map(p=><button key={p.id} style={{background:W,borderRadius:14,padding:14,marginBottom:10,border:'1px solid '+DS,display:'flex',alignItems:'center',gap:12,cursor:'pointer',width:'100%',textAlign:'left'}} onClick={()=>{setMe(p);localStorage.setItem('buddy_bet_me',p.id)}}><Av name={p.name} color={G}/><span style={{fontSize:16,fontWeight:500}}>{p.name}</span></button>)}</div></div>
-  if(ledgerWith)return <Ledger me={me} other={ledgerWith} bets={betsWith(ledgerWith.id)} bal={balWith(ledgerWith.id)} uns={unsettled(ledgerWith.id)} onBack={()=>setLedgerWith(null)} onSettle={async(id,wid,st)=>{await supabase.from('bets').update({winner_id:wid,status:st}).eq('id',id);await init()}} onProfile={()=>setViewProfile(ledgerWith)}/>
+  if(!me)return <LoginScreen onLogin={handleLogin}/>
+  if(ledgerWith)return <Ledger me={me} other={ledgerWith} bets={betsWith(ledgerWith.id)} bal={balWith(ledgerWith.id)} uns={unsettled(ledgerWith.id)} onBack={()=>setLedgerWith(null)} onSettle={async(id,wid,st)=>{await supabase.from('bets').update({winner_id:wid,status:st}).eq('id',id);await loadData()}} onProfile={()=>setViewProfile(ledgerWith)}/>
   if(viewProfile)return <PView player={viewProfile} onBack={()=>setViewProfile(null)}/>
   const allOthers=players.filter(p=>p.id!==me.id)
   const pts=partners()
   return <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',paddingBottom:80}}>
-    <Hdr title="Buddy Bet" sub={<>Playing as {me.name} &middot; <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>{localStorage.removeItem('buddy_bet_me');setMe(null)}}>switch</span></>}/>
+    <Hdr title="Buddy Bet" sub={<>Playing as {me.name} &middot; <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>{localStorage.removeItem('buddy_bet_me');setMe(null);setPlayers([]);setBets([])}}>logout</span></>}/>
     <div style={{padding:16}}>
       {tab==='home'&&<Home me={me} pts={pts} others={allOthers} balWith={balWith} uns={unsettled} onOpen={p=>setLedgerWith(p)}/>}
-      {tab==='add'&&<AddBet me={me} players={players} onSave={async b=>{await supabase.from('bets').insert([b]);await init();setTab('home')}}/>}
-      {tab==='profile'&&<MyProfile me={me} onSave={async u=>{await supabase.from('players').update(u).eq('id',me.id);setMe({...me,...u});await init()}}/>}
+      {tab==='add'&&<AddBet me={me} players={players} onSave={async b=>{await supabase.from('bets').insert([b]);await loadData();setTab('home')}}/>}
+      {tab==='profile'&&<MyProfile me={me} onSave={async u=>{await supabase.from('players').update(u).eq('id',me.id);setMe({...me,...u});await loadData()}}/>}
     </div>
     <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:430,background:W,borderTop:'1px solid '+DS,display:'flex',zIndex:200}}>
       {[['home','&#127968;','Home'],['add','&#10133;','Add Bet'],['profile','&#128100;','Profile']].map(([id,ic,lb])=><button key={id} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'10px 0 12px',background:'none',border:'none',cursor:'pointer',gap:3,color:tab===id?G:MU,fontSize:11}} onClick={()=>setTab(id)}><span style={{fontSize:20}} dangerouslySetInnerHTML={{__html:ic}}/><span style={{fontSize:11,fontWeight:500}}>{lb}</span></button>)}
