@@ -92,7 +92,7 @@ export default function App(){
   function partners(){if(!me)return[];const ids=new Set();bets.forEach(b=>{if(b.challenger_id===me.id)ids.add(b.opponent_id);if(b.opponent_id===me.id)ids.add(b.challenger_id)});return players.filter(p=>ids.has(p.id))}
   if(loading)return <div style={{background:SAND,minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center'}}><div style={{fontSize:48}}></div><p style={{color:MU}}>Loading...</p></div></div>
   if(!me)return <LoginScreen onLogin={handleLogin}/>
-  if(ledgerWith)return <Ledger me={me} other={ledgerWith} bets={betsWith(ledgerWith.id)} bal={balWith(ledgerWith.id)} uns={unsettled(ledgerWith.id)} onBack={()=>setLedgerWith(null)} onSettle={async(id,wid,st)=>{await supabase.from('bets').update({winner_id:wid,status:st}).eq('id',id);await loadData()}} onProfile={()=>setViewProfile(ledgerWith)}/>
+  if(ledgerWith)return <Ledger me={me} other={ledgerWith} bets={betsWith(ledgerWith.id)} bal={balWith(ledgerWith.id)} uns={unsettled(ledgerWith.id)} onBack={()=>setLedgerWith(null)} onSettle={async(id,wid,st)=>{await supabase.from('bets').update({winner_id:wid,status:st}).eq('id',id);await loadData()}} onUpdate={async(id,desc,amt)=>{await supabase.from('bets').update({description:desc,amount:amt}).eq('id',id);await loadData()}} onVoid={async(id)=>{await supabase.from('bets').update({status:'void',winner_id:null}).eq('id',id);await loadData()}} onProfile={()=>setViewProfile(ledgerWith)}/>
   if(viewProfile)return <PView player={viewProfile} onBack={()=>setViewProfile(null)}/>
   const allOthers=players.filter(p=>p.id!==me.id)
   const pts=partners()
@@ -115,10 +115,14 @@ function Home({me,pts,others,balWith,uns,onOpen}){
   
   </div>
 }
-function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile}){
+function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile,onUpdate,onVoid}){
   const [exp,setExp]=useState(null)
   const [settling,setSettling]=useState(null)
   const [wid,setWid]=useState(null)
+  const [editing,setEditing]=useState(null)
+  const [editDesc,setEditDesc]=useState("")
+  const [editAmt,setEditAmt]=useState("")
+  const [saving,setSaving]=useState(false)
   const open=bets.filter(b=>b.status==='open')
   const closed=bets.filter(b=>b.status!=='open')
   const SL={fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10,marginTop:8}
@@ -133,9 +137,22 @@ function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile}){
         </div>
       </div>
       {open.length>0&&<><div style={SL}>Open Bets</div>{open.map(b=>{const iC=b.challenger_id===me.id;return <div key={b.id} style={{background:W,borderRadius:12,padding:14,marginBottom:10,border:'1px solid '+DS}}>
-        <div style={{display:'flex',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExp(exp===b.id?null:b.id)}>
-          <div style={{flex:1}}><div style={{fontWeight:500,fontSize:14}}>{b.description}</div><div style={{fontSize:12,color:MU,marginTop:2}}>{iC?'You challenged':'They challenged'} &middot; {fmtA(b.amount)}</div></div>
-          <span style={{fontSize:11,padding:'3px 8px',borderRadius:20,fontWeight:600,background:'#fef9c3',color:'#854d0e',whiteSpace:'nowrap',alignSelf:'flex-start'}}>Open</span>
+        <div style={{display:'flex',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>{if(editing!==b.id)setExp(exp===b.id?null:b.id)}}>
+          <div style={{flex:1}}>
+            {editing===b.id?<div onClick={e=>e.stopPropagation()}>
+              <input style={{width:'100%',padding:'6px 10px',border:'1.5px solid '+DS,borderRadius:8,fontSize:14,marginBottom:6,boxSizing:'border-box',fontFamily:'inherit'}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Bet description"/>
+              <input style={{width:'80px',padding:'6px 10px',border:'1.5px solid '+DS,borderRadius:8,fontSize:14,boxSizing:'border-box',fontFamily:'inherit'}} type="number" min="0" step="0.5" value={editAmt} onChange={e=>setEditAmt(e.target.value)} placeholder="Amount"/>
+            </div>:<div><div style={{fontWeight:500,fontSize:14}}>{b.description}</div><div style={{fontSize:12,color:MU,marginTop:2}}>{iC?'You challenged':'They challenged'} &middot; {fmtA(b.amount)}</div></div>}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+            <span style={{fontSize:11,padding:'3px 8px',borderRadius:20,fontWeight:600,background:'#fef9c3',color:'#854d0e',whiteSpace:'nowrap'}}>Open</span>
+            {iC&&editing!==b.id&&<span style={{fontSize:11,padding:'2px 7px',borderRadius:20,fontWeight:600,background:'#f3f4f6',color:'#374151',cursor:'pointer',whiteSpace:'nowrap'}} onClick={e=>{e.stopPropagation();setEditing(b.id);setEditDesc(b.description);setEditAmt(String(b.amount));setExp(null)}}>✏️ Edit</span>}
+            {iC&&editing===b.id&&<div style={{display:'flex',gap:4}} onClick={e=>e.stopPropagation()}>
+              <span style={{fontSize:11,padding:'2px 7px',borderRadius:20,fontWeight:600,background:'#dcfce7',color:'#166534',cursor:'pointer'}} onClick={async()=>{setSaving(true);await onUpdate(b.id,editDesc,parseFloat(editAmt));setSaving(false);setEditing(null)}}>{ saving?'…':'Save'}</span>
+              <span style={{fontSize:11,padding:'2px 7px',borderRadius:20,fontWeight:600,background:'#f3f4f6',color:'#374151',cursor:'pointer'}} onClick={()=>setEditing(null)}>Cancel</span>
+            </div>}
+            {iC&&editing!==b.id&&<span style={{fontSize:11,padding:'2px 7px',borderRadius:20,fontWeight:600,background:'#fee2e2',color:'#991b1b',cursor:'pointer',whiteSpace:'nowrap'}} onClick={e=>{e.stopPropagation();if(window.confirm('Void this bet?'))onVoid(b.id)}}>🚫 Void</span>}
+          </div>
         </div>
         {settling===b.id?<div style={{marginTop:12}}>
           <div style={{fontSize:13,color:MU,marginBottom:6,fontWeight:500}}>Who won?</div>
