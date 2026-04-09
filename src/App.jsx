@@ -90,7 +90,7 @@ export default function App(){
   function balWith(id){let n=0;for(const b of betsWith(id)){if(b.status==='open')continue;n+=b.winner_id===me.id?b.amount:-b.amount}return n}
   function unsettled(id){let n=0;for(const b of betsWith(id)){if(b.status==='settle_later')n+=b.winner_id===me.id?b.amount:-b.amount}return n}
   function partners(){if(!me)return[];const ids=new Set();bets.forEach(b=>{if(b.challenger_id===me.id)ids.add(b.opponent_id);if(b.opponent_id===me.id)ids.add(b.challenger_id)});return players.filter(p=>ids.has(p.id))}
-  if(loading)return <div style={{background:SAND,minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center'}}><div style={{fontSize:48}}>&#9971;</div><p style={{color:MU}}>Loading...</p></div></div>
+  if(loading)return <div style={{background:SAND,minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center'}}><div style={{fontSize:48}}></div><p style={{color:MU}}>Loading...</p></div></div>
   if(!me)return <LoginScreen onLogin={handleLogin}/>
   if(ledgerWith)return <Ledger me={me} other={ledgerWith} bets={betsWith(ledgerWith.id)} bal={balWith(ledgerWith.id)} uns={unsettled(ledgerWith.id)} onBack={()=>setLedgerWith(null)} onSettle={async(id,wid,st)=>{await supabase.from('bets').update({winner_id:wid,status:st}).eq('id',id);await loadData()}} onProfile={()=>setViewProfile(ledgerWith)}/>
   if(viewProfile)return <PView player={viewProfile} onBack={()=>setViewProfile(null)}/>
@@ -192,7 +192,7 @@ function AddBet({me,players,onSave}){
     <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>What&apos;s the bet?</label>
     <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='text' placeholder='e.g. Scheffler hits the next green' value={desc} onChange={e=>setDesc(e.target.value)}/>
     <button style={{width:'100%',marginTop:18,padding:13,borderRadius:12,fontSize:15,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:(!ok||saving)?.5:1}} onClick={async()=>{if(!ok)return;setSaving(true);await onSave({challenger_id:me.id,opponent_id:oppId,amount:parseFloat(amt),description:desc,status:'open',winner_id:null});setOpp('');setAmt('');setDesc('');setSaving(false)}} disabled={!ok||saving||!oppId}>
-      {saving?'Saving...':'⛳ Lock It In'}
+      {saving?'Saving...':' Lock It In'}
     </button>
   </div></div>
 }
