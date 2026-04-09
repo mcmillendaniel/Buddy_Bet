@@ -7,7 +7,7 @@ const fmt=n=>(n>=0?'+$':'-$')+Math.abs(n).toFixed(2).replace(/\.00$/,'')
 const fmtA=n=>'$'+Math.abs(n).toFixed(2).replace(/\.00$/,'')
 const ini=n=>n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
 function Av({name,color,size=44}){return <div style={{width:size,height:size,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',color:W,fontWeight:600,fontSize:size/2.5,flexShrink:0}}>{ini(name)}</div>}
-function Hdr({title,sub,onBack}){return <div style={{background:G,color:W,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,position:'sticky',top:0,zIndex:100}}>{onBack?<button style={{background:'none',border:'none',color:W,fontSize:28,cursor:'pointer',padding:'0 8px 0 0',lineHeight:1}} onClick={onBack}>&#8249;</button>:<span style={{fontSize:24}}>&#9971;</span>}<div><div style={{fontSize:18,fontWeight:600}}>{title}</div>{sub&&<div style={{fontSize:11,opacity:.8,marginTop:1}}>{sub}</div>}</div></div>}
+function Hdr({title,sub,onBack}){return <div style={{background:G,color:W,padding:'16px 20px',display:'flex',alignItems:'center',gap:8,position:'sticky',top:0,zIndex:100}}>{onBack?<button style={{background:'none',border:'none',color:W,fontSize:28,cursor:'pointer',padding:'0 8px 0 0',lineHeight:1}} onClick={onBack}>&#8249;</button>:}<div><div style={{fontSize:20,fontWeight:900,letterSpacing:'0.1em',fontFamily:"'Cinzel',serif",textTransform:'uppercase',lineHeight:1}}>{title}</div>{sub&&<div style={{fontSize:11,opacity:.8,marginTop:1}}>{sub}</div>}</div></div>}
 function LoginScreen({onLogin}){
   const [name,setName]=useState('')
   const [pin,setPin]=useState('')
@@ -29,9 +29,9 @@ function LoginScreen({onLogin}){
   return(
     <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column'}}>
       <div style={{background:G,padding:'32px 24px 24px',textAlign:'center'}}>
-        <div style={{fontSize:52,marginBottom:8}}>&#9971;</div>
-        <div style={{color:W,fontSize:30,fontWeight:700,letterSpacing:'0.06em',fontFamily:"'Cinzel',serif",textTransform:'uppercase'}}>Buddy Bet</div>
-        <div style={{color:'rgba(255,255,255,0.7)',fontSize:13,marginTop:4}}>Masters Weekend</div>
+        
+        <div style={{color:W,fontSize:42,fontWeight:900,letterSpacing:'0.12em',fontFamily:"'Cinzel',serif",textTransform:'uppercase',lineHeight:1,textShadow:'0 2px 8px rgba(0,0,0,0.18)',marginTop:8}}>Buddy Bet</div>
+        <div style={{color:'rgba(255,255,255,0.75)',fontSize:13,letterSpacing:'0.18em',textTransform:'uppercase',marginTop:10,fontFamily:"'Cinzel',serif"}}>Masters Weekend</div>
       </div>
       <div style={{padding:'32px 24px',flex:1}}>
         <div style={{marginBottom:20}}>
@@ -53,7 +53,7 @@ function LoginScreen({onLogin}){
         {err&&<div style={{background:'#fdecea',border:'1px solid #fca5a5',borderRadius:10,padding:'10px 14px',fontSize:13,color:RED,marginBottom:16}}>{err}</div>}
         <button style={{width:'100%',padding:14,borderRadius:12,fontSize:16,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:loading?.7:1}}
           onClick={handleLogin} disabled={loading}>
-          {loading?'Loading...':'Enter the Club &#9971;'}
+          {loading?'Loading...':'Enter the Club'}
         </button>
         <p style={{textAlign:'center',fontSize:12,color:MU,marginTop:16}}>New here? Just enter your name and the PIN to join.</p>
       </div>
