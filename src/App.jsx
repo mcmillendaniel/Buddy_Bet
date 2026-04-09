@@ -1,0 +1,151 @@
+import{useState,useEffect}from 'react'
+import{supabase}from './supabase'
+import'./App.css'
+const G='#1a5c38',GOLD='#c9a84c',SAND='#f5efe0',DS='#ede4cc',W='#fff',RED='#b91c1c',TX='#1a1a1a',MU='#6b5d3f'
+const fmt=n=>(n>=0?'+$':'-$')+Math.abs(n).toFixed(2).replace(/\.00$/,'')
+const fmtA=n=>'$'+Math.abs(n).toFixed(2).replace(/\.00$/,'')
+const ini=n=>n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
+function Av({name,color,size=44}){return <div style={{width:size,height:size,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',color:W,fontWeight:600,fontSize:size/2.5,flexShrink:0}}>{ini(name)}</div>}
+function Hdr({title,sub,onBack}){return <div style={{background:G,color:W,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,position:'sticky',top:0,zIndex:100}}>{onBack?<button style={{background:'none',border:'none',color:W,fontSize:28,cursor:'pointer',padding:'0 8px 0 0',lineHeight:1}} onClick={onBack}>&#8249;</button>:<span style={{fontSize:24}}>&#9971;</span>}<div><div style={{fontSize:18,fontWeight:600}}>{title}</div>{sub&&<div style={{fontSize:11,opacity:.8,marginTop:1}}>{sub}</div>}</div></div>}
+export default function App(){
+  const [tab,setTab]=useState('home')
+  const [players,setPlayers]=useState([])
+  const [bets,setBets]=useState([])
+  const [me,setMe]=useState(null)
+  const [loading,setLoading]=useState(true)
+  const [ledgerWith,setLedgerWith]=useState(null)
+  const [viewProfile,setViewProfile]=useState(null)
+  useEffect(()=>{init()},[])
+  async function init(){
+    setLoading(true)
+    const{data:pl}=await supabase.from('players').select('*').order('name')
+    const{data:bt}=await supabase.from('bets').select('*').order('created_at',{ascending:false})
+    setPlayers(pl||[]);setBets(bt||[])
+    const saved=localStorage.getItem('buddy_bet_me')
+    if(saved){const found=(pl||[]).find(p=>p.id===saved);if(found)setMe(found)}
+    setLoading(false)
+  }
+  function betsWith(id){if(!me)return[];return bets.filter(b=>(b.challenger_id===me.id&&b.opponent_id===id)||(b.challenger_id===id&&b.opponent_id===me.id))}
+  function balWith(id){let n=0;for(const b of betsWith(id)){if(b.status==='open')continue;n+=b.winner_id===me.id?b.amount:-b.amount}return n}
+  function unsettled(id){let n=0;for(const b of betsWith(id)){if(b.status==='settle_later')n+=b.winner_id===me.id?b.amount:-b.amount}return n}
+  function partners(){if(!me)return[];const ids=new Set();bets.forEach(b=>{if(b.challenger_id===me.id)ids.add(b.opponent_id);if(b.opponent_id===me.id)ids.add(b.challenger_id)});return players.filter(p=>ids.has(p.id))}
+  if(loading)return <div style={{background:SAND,minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{textAlign:'center'}}><div style={{fontSize:48}}>&#9971;</div><p style={{color:MU}}>Loading...</p></div></div>
+  if(!me)return <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto'}}><Hdr title="Buddy Bet"/><div style={{padding:16}}><p style={{color:MU,marginBottom:16}}>Who are you?</p>{players.map(p=><button key={p.id} style={{background:W,borderRadius:14,padding:14,marginBottom:10,border:'1px solid '+DS,display:'flex',alignItems:'center',gap:12,cursor:'pointer',width:'100%',textAlign:'left'}} onClick={()=>{setMe(p);localStorage.setItem('buddy_bet_me',p.id)}}><Av name={p.name} color={G}/><span style={{fontSize:16,fontWeight:500}}>{p.name}</span></button>)}</div></div>
+  if(ledgerWith)return <Ledger me={me} other={ledgerWith} bets={betsWith(ledgerWith.id)} bal={balWith(ledgerWith.id)} uns={unsettled(ledgerWith.id)} onBack={()=>setLedgerWith(null)} onSettle={async(id,wid,st)=>{await supabase.from('bets').update({winner_id:wid,status:st}).eq('id',id);await init()}} onProfile={()=>setViewProfile(ledgerWith)}/>
+  if(viewProfile)return <PView player={viewProfile} onBack={()=>setViewProfile(null)}/>
+  const allOthers=players.filter(p=>p.id!==me.id)
+  const pts=partners()
+  return <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',paddingBottom:80}}>
+    <Hdr title="Buddy Bet" sub={<>Playing as {me.name} &middot; <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>{localStorage.removeItem('buddy_bet_me');setMe(null)}}>switch</span></>}/>
+    <div style={{padding:16}}>
+      {tab==='home'&&<Home me={me} pts={pts} others={allOthers} balWith={balWith} uns={unsettled} onOpen={p=>setLedgerWith(p)}/>}
+      {tab==='add'&&<AddBet me={me} players={players} onSave={async b=>{await supabase.from('bets').insert([b]);await init();setTab('home')}}/>}
+      {tab==='profile'&&<MyProfile me={me} onSave={async u=>{await supabase.from('players').update(u).eq('id',me.id);setMe({...me,...u});await init()}}/>}
+    </div>
+    <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:430,background:W,borderTop:'1px solid '+DS,display:'flex',zIndex:200}}>
+      {[['home','&#127968;','Home'],['add','&#10133;','Add Bet'],['profile','&#128100;','Profile']].map(([id,ic,lb])=><button key={id} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'10px 0 12px',background:'none',border:'none',cursor:'pointer',gap:3,color:tab===id?G:MU,fontSize:11}} onClick={()=>setTab(id)}><span style={{fontSize:20}} dangerouslySetInnerHTML={{__html:ic}}/><span style={{fontSize:11,fontWeight:500}}>{lb}</span></button>)}
+    </div>
+  </div>
+}
+function Home({me,pts,others,balWith,uns,onOpen}){
+  return <div><div style={{fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>Your Bets</div>
+  {pts.length===0&&<p style={{color:MU,fontSize:14}}>No bets yet — tap Add Bet to get started.</p>}
+  {pts.map(p=>{const bal=balWith(p.id),u=uns(p.id);return <div key={p.id} style={{background:W,borderRadius:14,padding:14,marginBottom:10,border:'1px solid '+DS,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}} onClick={()=>onOpen(p)}><Av name={p.name} color={G}/><div style={{flex:1}}><div style={{fontWeight:500,fontSize:16}}>{p.name}</div>{u!==0&&<div style={{fontSize:12,color:MU,marginTop:2}}>Unsettled: <span style={{color:u>0?G:RED,fontWeight:600}}>{fmt(u)}</span></div>}</div><div style={{fontWeight:700,fontSize:17,color:bal>=0?G:RED}}>{fmt(bal)}</div></div>})}
+  {others.filter(p=>!pts.find(x=>x.id===p.id)).map(p=><div key={p.id} style={{background:W,borderRadius:14,padding:14,marginBottom:10,border:'1px solid '+DS,display:'flex',alignItems:'center',gap:12,cursor:'pointer',opacity:.55}} onClick={()=>onOpen(p)}><Av name={p.name} color={MU}/><div style={{flex:1}}><div style={{fontWeight:500,fontSize:16}}>{p.name}</div><div style={{fontSize:12,color:MU}}>No bets yet</div></div><div style={{color:MU}}>$0</div></div>)}
+  </div>
+}
+function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile}){
+  const [exp,setExp]=useState(null)
+  const [settling,setSettling]=useState(null)
+  const [wid,setWid]=useState(null)
+  const open=bets.filter(b=>b.status==='open')
+  const closed=bets.filter(b=>b.status!=='open')
+  const SL={fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10,marginTop:8}
+  return <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',paddingBottom:40}}>
+    <Hdr title="Ledger" onBack={onBack}/>
+    <div style={{padding:16}}>
+      <div style={{background:W,borderRadius:14,padding:16,marginBottom:20,border:'1px solid '+DS}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div style={{textAlign:'center'}}><Av name={me.name} color={G}/><div style={{fontSize:12,color:MU,marginTop:4}}>{me.name}</div></div>
+          <div style={{textAlign:'center',flex:1}}><div style={{fontSize:30,fontWeight:700,color:bal>=0?G:RED}}>{fmt(bal)}</div>{uns!==0&&<div style={{fontSize:11,color:MU}}>Unsettled: {fmt(uns)}</div>}</div>
+          <div style={{textAlign:'center',cursor:'pointer'}} onClick={onProfile}><Av name={other.name} color={GOLD}/><div style={{fontSize:12,color:MU,marginTop:4}}>{other.name}</div><div style={{fontSize:10,color:GOLD}}>payment info</div></div>
+        </div>
+      </div>
+      {open.length>0&&<><div style={SL}>Open Bets</div>{open.map(b=>{const iC=b.challenger_id===me.id;return <div key={b.id} style={{background:W,borderRadius:12,padding:14,marginBottom:10,border:'1px solid '+DS}}>
+        <div style={{display:'flex',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setExp(exp===b.id?null:b.id)}>
+          <div style={{flex:1}}><div style={{fontWeight:500,fontSize:14}}>{b.description}</div><div style={{fontSize:12,color:MU,marginTop:2}}>{iC?'You challenged':'They challenged'} &middot; {fmtA(b.amount)}</div></div>
+          <span style={{fontSize:11,padding:'3px 8px',borderRadius:20,fontWeight:600,background:'#fef9c3',color:'#854d0e',whiteSpace:'nowrap',alignSelf:'flex-start'}}>Open</span>
+        </div>
+        {settling===b.id?<div style={{marginTop:12}}>
+          <div style={{fontSize:13,color:MU,marginBottom:6,fontWeight:500}}>Who won?</div>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>
+            <button style={{flex:1,padding:9,borderRadius:9,border:'none',fontWeight:500,cursor:'pointer',background:wid===me.id?G:'#eee',color:wid===me.id?W:TX}} onClick={()=>setWid(me.id)}>{me.name}</button>
+            <button style={{flex:1,padding:9,borderRadius:9,border:'none',fontWeight:500,cursor:'pointer',background:wid===other.id?G:'#eee',color:wid===other.id?W:TX}} onClick={()=>setWid(other.id)}>{other.name}</button>
+          </div>
+          {wid&&<><div style={{fontSize:13,color:MU,marginBottom:6,fontWeight:500}}>Cash exchanged?</div>
+          <div style={{display:'flex',gap:8}}>
+            <button style={{flex:1,padding:9,borderRadius:9,border:'none',cursor:'pointer',background:'#dcfce7',color:'#166534',fontWeight:500}} onClick={async()=>{await onSettle(b.id,wid,'settled');setSettling(null);setWid(null)}}>&#10003; Settled</button>
+            <button style={{flex:1,padding:9,borderRadius:9,border:'none',cursor:'pointer',background:'#fef3c7',color:'#92400e',fontWeight:500}} onClick={async()=>{await onSettle(b.id,wid,'settle_later');setSettling(null);setWid(null)}}>Settle Later</button>
+          </div></>}
+          <button style={{marginTop:8,background:'none',border:'none',color:MU,fontSize:13,cursor:'pointer'}} onClick={()=>{setSettling(null);setWid(null)}}>Cancel</button>
+        </div>:<button style={{width:'100%',marginTop:10,padding:9,borderRadius:9,fontSize:13,fontWeight:500,background:SAND,border:'1.5px solid '+G,color:G,cursor:'pointer'}} onClick={()=>setSettling(b.id)}>Settle this bet</button>}
+      </div>})}</>}
+      {closed.length>0&&<><div style={SL}>History</div>{closed.map(b=>{const iW=b.winner_id===me.id;return <div key={b.id} style={{background:W,borderRadius:12,padding:14,marginBottom:10,border:'1px solid '+DS}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}} onClick={()=>setExp(exp===b.id?null:b.id)}>
+          <div style={{flex:1}}><div style={{fontWeight:500,fontSize:14}}>{b.description}</div><div style={{fontSize:12,color:MU,marginTop:2}}>{iW?'You won':'They won'}</div></div>
+          <div style={{textAlign:'right'}}><div style={{fontWeight:700,fontSize:15,color:iW?G:RED}}>{iW?'+':'-'}{fmtA(b.amount)}</div><span style={{fontSize:11,padding:'3px 8px',borderRadius:20,fontWeight:600,...(b.status==='settled'?{background:'#dcfce7',color:'#166534'}:{background:'#fef3c7',color:'#92400e'})}}>{b.status==='settled'?'Settled':'Settle Later'}</span></div>
+        </div>
+        {exp===b.id&&<div style={{marginTop:8,fontSize:13,color:MU,borderTop:'1px solid '+DS,paddingTop:8}}>{b.description}</div>}
+      </div>})}</>}
+    </div>
+  </div>
+}
+function AddBet({me,players,onSave}){
+  const [opp,setOpp]=useState('')
+  const [amt,setAmt]=useState('')
+  const [desc,setDesc]=useState('')
+  const [saving,setSaving]=useState(false)
+  const others=players.filter(p=>p.id!==me.id)
+  const ok=opp&&amt&&desc
+  return <div><div style={{fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>New Bet</div>
+  <div style={{background:W,borderRadius:14,padding:16,border:'1px solid '+DS}}>
+    <label style={{display:'block',fontSize:13,color:MU,marginBottom:5}}>Opponent</label>
+    <select style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,background:'#fdfaf4',outline:'none',fontFamily:'inherit',boxSizing:'border-box'}} value={opp} onChange={e=>setOpp(e.target.value)}>
+      <option value=''>Select player...</option>{others.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+    </select>
+    <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>Amount ($)</label>
+    <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='number' min='0' step='0.5' placeholder='e.g. 5' value={amt} onChange={e=>setAmt(e.target.value)}/>
+    <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>What&apos;s the bet?</label>
+    <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='text' placeholder='e.g. Scheffler hits the next green' value={desc} onChange={e=>setDesc(e.target.value)}/>
+    <button style={{width:'100%',marginTop:18,padding:13,borderRadius:12,fontSize:15,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:(!ok||saving)?.5:1}} onClick={async()=>{if(!ok)return;setSaving(true);await onSave({challenger_id:me.id,opponent_id:opp,amount:parseFloat(amt),description:desc,status:'open',winner_id:null});setOpp('');setAmt('');setDesc('');setSaving(false)}} disabled={!ok||saving}>
+      {saving?'Saving...':'⛳ Lock It In'}
+    </button>
+  </div></div>
+}
+function MyProfile({me,onSave}){
+  const [v,setV]=useState(me.venmo||'')
+  const [c,setC]=useState(me.cashapp||'')
+  const [pp,setPp]=useState(me.paypal||'')
+  const [ph,setPh]=useState(me.phone||'')
+  const [saving,setSaving]=useState(false)
+  const [saved,setSaved]=useState(false)
+  return <div>
+    <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:20}}><Av name={me.name} color={G} size={56}/><div style={{fontSize:20,fontWeight:600}}>{me.name}</div></div>
+    <div style={{fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>Payment Info</div>
+    <div style={{background:W,borderRadius:14,padding:16,border:'1px solid '+DS}}>
+      {[['Venmo',v,setV,'@username'],['Cash App',c,setC,'$cashtag'],['PayPal',pp,setPp,'email or @username'],['Phone / Zelle',ph,setPh,'10-digit number']].map(([lb,val,set,ph2])=><div key={lb}><label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>{lb}</label><input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='text' placeholder={ph2} value={val} onChange={e=>set(e.target.value)}/></div>)}
+      <button style={{width:'100%',marginTop:18,padding:13,borderRadius:12,fontSize:15,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer'}} onClick={async()=>{setSaving(true);await onSave({venmo:v,cashapp:c,paypal:pp,phone:ph});setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2000)}} disabled={saving}>{saved?'✓ Saved!':saving?'Saving...':'Save Profile'}</button>
+    </div>
+  </div>
+}
+function PView({player,onBack}){
+  const fields=[['Venmo',player.venmo],['Cash App',player.cashapp],['PayPal',player.paypal],['Phone / Zelle',player.phone]].filter(([,v])=>v)
+  return <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto'}}>
+    <Hdr title={player.name} onBack={onBack}/>
+    <div style={{padding:16}}>
+      <div style={{display:'flex',justifyContent:'center',marginBottom:24}}><Av name={player.name} color={GOLD} size={72}/></div>
+      {fields.length===0&&<p style={{color:MU,textAlign:'center',marginTop:40}}>No payment info added yet.</p>}
+      {fields.map(([lb,val])=><div key={lb} style={{background:W,borderRadius:12,padding:14,marginBottom:10,border:'1px solid '+DS}}><div style={{fontSize:12,color:MU,marginBottom:4}}>{lb}</div><div style={{fontSize:17,fontWeight:600,color:G}}>{val}</div></div>)}
+    </div>
+  </div>
+}
