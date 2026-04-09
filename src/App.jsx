@@ -7,7 +7,7 @@ const fmt=n=>(n>=0?'+$':'-$')+Math.abs(n).toFixed(2).replace(/\.00$/,'')
 const fmtA=n=>'$'+Math.abs(n).toFixed(2).replace(/\.00$/,'')
 const ini=n=>n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
 function Av({name,color,size=44}){return <div style={{width:size,height:size,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',color:W,fontWeight:600,fontSize:size/2.5,flexShrink:0}}>{ini(name)}</div>}
-function Hdr({title,sub,onBack}){return <div style={{background:G,color:W,padding:'16px 20px',display:'flex',alignItems:'center',gap:8,position:'sticky',top:0,zIndex:100}}>{onBack?<button style={{background:'none',border:'none',color:W,fontSize:28,cursor:'pointer',padding:'0 8px 0 0',lineHeight:1}} onClick={onBack}>&#8249;</button>:}<div><div style={{fontSize:20,fontWeight:900,letterSpacing:'0.1em',fontFamily:"'Cinzel',serif",textTransform:'uppercase',lineHeight:1}}>{title}</div>{sub&&<div style={{fontSize:11,opacity:.8,marginTop:1}}>{sub}</div>}</div></div>}
+function Hdr({title,sub,onBack}){return <div style={{background:G,color:W,padding:'16px 20px',display:'flex',alignItems:'center',gap:8,position:'sticky',top:0,zIndex:100}}>{onBack&&<button style={{background:'none',border:'none',color:W,fontSize:28,cursor:'pointer',padding:'0 8px 0 0',lineHeight:1}} onClick={onBack}>&#8249;</button>}<div><div style={{fontSize:20,fontWeight:900,letterSpacing:'0.1em',fontFamily:"'Cinzel',serif",textTransform:'uppercase',lineHeight:1}}>{title}</div>{sub&&<div style={{fontSize:11,opacity:.8,marginTop:1}}>{sub}</div>}</div></div>}
 function LoginScreen({onLogin}){
   const [name,setName]=useState('')
   const [pin,setPin]=useState('')
