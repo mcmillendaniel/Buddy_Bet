@@ -37,7 +37,7 @@ function LoginScreen({onLogin}){
         <div style={{marginBottom:20}}>
           <label style={{display:'block',fontSize:13,fontWeight:500,color:MU,marginBottom:8}}>Your first name</label>
           <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid '+DS,borderRadius:12,fontSize:16,outline:'none',background:W,boxSizing:'border-box'}}
-            type='text' value={name}
+            type='text' autoCapitalize='words' autoCorrect='off' spellCheck={false} value={name}
             onChange={e=>{setName(e.target.value);setErr('')}}
             onKeyDown={e=>e.key==='Enter'&&handleLogin()}
           />
@@ -141,7 +141,7 @@ function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile,onUpdate,onVoid
           <div style={{flex:1}}>
             {editing===b.id?<div onClick={e=>e.stopPropagation()}>
               <input style={{width:'100%',padding:'6px 10px',border:'1.5px solid '+DS,borderRadius:8,fontSize:14,marginBottom:6,boxSizing:'border-box',fontFamily:'inherit'}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Bet description"/>
-              <input style={{width:'80px',padding:'6px 10px',border:'1.5px solid '+DS,borderRadius:8,fontSize:14,boxSizing:'border-box',fontFamily:'inherit'}} type="number" min="0" step="0.5" value={editAmt} onChange={e=>setEditAmt(e.target.value)} placeholder="Amount"/>
+              <input style={{width:'80px',padding:'6px 10px',border:'1.5px solid '+DS,borderRadius:8,fontSize:14,boxSizing:'border-box',fontFamily:'inherit'}} type="text" inputMode="decimal" value={editAmt} onKeyDown={e=>{if(["e","E","+","-"].includes(e.key))e.preventDefault()}} onChange={e=>{const v=e.target.value;if(v===''||/^\d*\.?\d*$/.test(v))setEditAmt(v)}} placeholder="Amount"/>
             </div>:<div><div style={{fontWeight:500,fontSize:14}}>{b.description}</div><div style={{fontSize:12,color:MU,marginTop:2}}>{iC?'You challenged':'They challenged'} &middot; {fmtA(b.amount)}</div></div>}
           </div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
@@ -206,9 +206,10 @@ function AddBet({me,players,onSave}){
           </div>)}
         </div>
     <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>Amount ($)</label>
-    <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='number' min='0' step='0.5' placeholder='e.g. 5' value={amt} onChange={e=>setAmt(e.target.value)}/>
+    <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='text' inputMode='decimal' placeholder='e.g. 5' value={amt} onKeyDown={e=>{if(['e','E','+','-'].includes(e.key))e.preventDefault()}} onChange={e=>{const v=e.target.value;if(v===''||/^\d*\.?\d*$/.test(v))setAmt(v)}}/>
     <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>What&apos;s the bet?</label>
     <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='text' placeholder='e.g. Scheffler hits the next green' value={desc} onChange={e=>setDesc(e.target.value)}/>
+              {desc&&/^\d+$/.test(desc.trim())&&<div style={{color:'#c0392b',fontSize:12,marginTop:4}}>Description can't be only numbers</div>}
     <button style={{width:'100%',marginTop:18,padding:13,borderRadius:12,fontSize:15,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:(!ok||saving)?.5:1}} onClick={async()=>{if(!ok)return;setSaving(true);await onSave({challenger_id:me.id,opponent_id:oppId,amount:parseFloat(amt),description:desc,status:'open',winner_id:null});setOpp('');setAmt('');setDesc('');setSaving(false)}} disabled={!ok||saving||!oppId}>
       {saving?'Saving...':' Lock It In'}
     </button>
