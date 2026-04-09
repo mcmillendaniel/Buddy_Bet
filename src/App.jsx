@@ -163,6 +163,7 @@ function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile}){
 }
 function AddBet({me,players,onSave}){
   const [opp,setOpp]=useState('')
+  const [oppId,setOppId]=useState('')
   const [amt,setAmt]=useState('')
   const [desc,setDesc]=useState('')
   const [saving,setSaving]=useState(false)
