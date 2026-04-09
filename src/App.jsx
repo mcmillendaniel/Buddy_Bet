@@ -15,7 +15,7 @@ function LoginScreen({onLogin}){
   const [loading,setLoading]=useState(false)
   async function handleLogin(){
     if(!name||pin.length!==4){setErr('Enter your name and the 4-digit PIN');return}
-    if(pin!==PIN){setErr('Wrong PIN – ask the group for it');return}
+    if(pin!==PIN){setErr('Wrong PIN - ask the group for it');return}
     setLoading(true)
     let{data:existing}=await supabase.from('players').select('*').ilike('name',name.trim()).single()
     if(existing){onLogin(existing);return}
@@ -25,13 +25,13 @@ function LoginScreen({onLogin}){
   }
   return(
     <div style={{background:'#f5efe0',minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',paddingTop:'8vh'}}>
-      <img src='/iou_logo.webp' alt='IOU Logo' style={{width:200,height:200,objectFit:'contain',marginBottom:8,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.15))'}}/>
-      <div style={{fontSize:38,fontWeight:800,color:'#1a5c38',fontFamily:"'Cinzel',serif",letterSpacing:'0.05em',marginBottom:32,textAlign:'center'}}>BUDDY BET</div>
+      <img src="/iou_logo.webp" alt="IOU Logo" style={{width:200,height:200,objectFit:'contain',marginBottom:8,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.15))'}}/>
+      <div style={{fontSize:38,fontWeight:800,color:'#1a5c38',letterSpacing:'0.05em',marginBottom:32,textAlign:'center',fontFamily:"Georgia,serif"}}>BUDDY BET</div>
       <div style={{width:'100%',maxWidth:360,background:'#fff',borderRadius:16,padding:'28px 24px',boxShadow:'0 2px 16px rgba(0,0,0,0.10)'}}>
         <div style={{marginBottom:20}}>
           <label style={{display:'block',fontSize:13,fontWeight:500,color:'#555',marginBottom:8}}>Your first name</label>
           <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid #1a5c38',borderRadius:12,fontSize:16,outline:'none',background:'#fff',boxSizing:'border-box'}}
-            type='text' autoCapitalize='words' autoCorrect='off' spellCheck={false} value={name}
+            type="text" autoCapitalize="words" autoCorrect="off" spellCheck={false} value={name}
             onChange={e=>{setName(e.target.value);setErr('')}}
             onKeyDown={e=>e.key==='Enter'&&handleLogin()}
           />
@@ -39,117 +39,20 @@ function LoginScreen({onLogin}){
         <div style={{marginBottom:24}}>
           <label style={{display:'block',fontSize:13,fontWeight:500,color:'#555',marginBottom:8}}>Group PIN</label>
           <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid #1a5c38',borderRadius:12,fontSize:22,outline:'none',background:'#fff',boxSizing:'border-box',letterSpacing:8,textAlign:'center'}}
-            type='password' inputMode='numeric' maxLength={4} placeholder='••••' value={pin}
+            type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin}
             onChange={e=>{setPin(e.target.value.replace(/\D/g,'').slice(0,4));setErr('')}}
             onKeyDown={e=>e.key==='Enter'&&handleLogin()}
           />
         </div>
         {err&&<div style={{background:'#fdecea',border:'1px solid #fca5a5',borderRadius:10,padding:'10px 14px',fontSize:13,color:'#b91c1c',marginBottom:16}}>{err}</div>}
-        <button style={{width:'100%',padding:'14px',borderRadius:12,fontSize:16,fontWeight:600,background:'#1a5c38',color:'#fff',border:'none',cursor:'pointer',opacity:loading?.7:1}}
-          onClick={handleLogin} disabled={loading}>
+        <button
+          style={{width:'100%',padding:'14px',borderRadius:12,fontSize:16,fontWeight:600,background:'#1a5c38',color:'#fff',border:'none',cursor:'pointer',opacity:loading?0.7:1}}
+          onClick={handleLogin}
+          disabled={loading}
+        >
           {loading?'Loading...':'Enter the Club'}
         </button>
         <p style={{textAlign:'center',fontSize:12,color:'#888',marginTop:16}}>New here? Just enter your name and the PIN to join.</p>
-      </div>
-    </div>
-  )
-}){
-  const [name,setName]=useState('')
-  const [pin,setPin]=useState('')
-  const [err,setErr]=useState('')
-  const [loading,setLoading]=useState(false)
-  async function handleLogin(){
-    if(!name||pin.length!==4){setErr('Enter your name and the 4-digit PIN');return}
-    if(pin!==PIN){setErr('Wrong PIN – ask the group for it');return}
-    setLoading(true)
-    let{data:existing}=await supabase.from('players').select('*').ilike('name',name.trim()).single()
-    if(existing){onLogin(existing);return}
-    let{data:created}=await supabase.from('players').insert([{name:name.trim()}]).select().single()
-    if(created)onLogin(created)
-    setLoading(false)
-  }
-  return(
-    <div style={{background:'#f5efe0',minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',paddingTop:'8vh'}}>
-      <img
-        src="/iou_logo.webp"
-        alt="IOU Logo"
-        style={{width:200,height:200,objectFit:'contain',marginBottom:8,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.15))'}}
-      />
-      <div style={{fontSize:38,fontWeight:800,color:'#1a5c38',fontFamily:"'Cinzel',serif",letterSpacing:'0.05em',marginBottom:32,textAlign:'center'}}>BUDDY BET</div>
-      <div style={{width:'100%',maxWidth:360,background:'#fff',borderRadius:16,padding:'28px 24px',boxShadow:'0 2px 16px rgba(0,0,0,0.10)'}}>
-        <div style={{marginBottom:20}}>
-          <label style={{display:'block',fontSize:13,fontWeight:500,color:'#555',marginBottom:8}}>Your first name</label>
-          <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid #1a5c38',borderRadius:12,fontSize:16,outline:'none',background:'#fff',boxSizing:'border-box'}}
-            type='text' autoCapitalize='words' autoCorrect='off' spellCheck={false} value={name}
-            onChange={e=>{setName(e.target.value);setErr('')}}
-            onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-          />
-        </div>
-        <div style={{marginBottom:24}}>
-          <label style={{display:'block',fontSize:13,fontWeight:500,color:'#555',marginBottom:8}}>Group PIN</label>
-          <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid #1a5c38',borderRadius:12,fontSize:22,outline:'none',background:'#fff',boxSizing:'border-box',letterSpacing:8,textAlign:'center'}}
-            type='password' inputMode='numeric' maxLength={4} placeholder='••••' value={pin}
-            onChange={e=>{setPin(e.target.value.replace(/\D/g,'').slice(0,4));setErr('')}}
-            onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-          />
-        </div>
-        {err&&<div style={{background:'#fdecea',border:'1px solid #fca5a5',borderRadius:10,padding:'10px 14px',fontSize:13,color:'#b91c1c',marginBottom:16}}>{err}</div>}
-        <button style={{width:'100%',padding:'14,borderRadius:12,fontSize:16,fontWeight:600,background:'#1a5c38',color:'#fff',border:'none',cursor:'pointer',opacity:loading?.7:1}}
-          onClick={handleLogin} disabled={loading}>
-          {loading?'Loading...':'Enter the Club'}
-        </button>
-        <p style={{textAlign:'center',fontSize:12,color:'#888',marginTop:16}}>New here? Just enter your name and the PIN to join.</p>
-      </div>
-    </div>
-  )
-}){
-  const [name,setName]=useState('')
-  const [pin,setPin]=useState('')
-  const [err,setErr]=useState('')
-  const [loading,setLoading]=useState(false)
-  async function handleLogin(){
-    const n=name.trim()
-    if(!n||pin.length!==4){setErr('Enter your name and the 4-digit PIN');return}
-    if(pin!==PIN){setErr('Wrong PIN — ask the group for it');return}
-    setLoading(true);setErr('')
-    const{data:existing}=await supabase.from('players').select('*').ilike('name',n).single()
-    if(existing){onLogin(existing)}
-    else{
-      const{data:created,error}=await supabase.from('players').insert([{name:n}]).select().single()
-      if(error){setErr('Something went wrong, try again');setLoading(false);return}
-      onLogin(created)
-    }
-  }
-  return(
-    <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column'}}>
-      <div style={{background:G,padding:'32px 24px 24px',textAlign:'center'}}>
-        
-        <div style={{color:W,fontSize:42,fontWeight:900,letterSpacing:'0.12em',fontFamily:"'Cinzel',serif",textTransform:'uppercase',lineHeight:1,textShadow:'0 2px 8px rgba(0,0,0,0.18)',marginTop:8}}>Buddy Bet</div>
-        <div style={{color:'rgba(255,255,255,0.75)',fontSize:13,letterSpacing:'0.18em',textTransform:'uppercase',marginTop:10,fontFamily:"'Cinzel',serif"}}>Masters Weekend</div>
-      </div>
-      <div style={{padding:'32px 24px',flex:1}}>
-        <div style={{marginBottom:20}}>
-          <label style={{display:'block',fontSize:13,fontWeight:500,color:MU,marginBottom:8}}>Your first name</label>
-          <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid '+DS,borderRadius:12,fontSize:16,outline:'none',background:W,boxSizing:'border-box'}}
-            type='text' autoCapitalize='words' autoCorrect='off' spellCheck={false} value={name}
-            onChange={e=>{setName(e.target.value);setErr('')}}
-            onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-          />
-        </div>
-        <div style={{marginBottom:24}}>
-          <label style={{display:'block',fontSize:13,fontWeight:500,color:MU,marginBottom:8}}>Group PIN</label>
-          <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid '+DS,borderRadius:12,fontSize:22,outline:'none',background:W,boxSizing:'border-box',letterSpacing:8,textAlign:'center'}}
-            type='password' inputMode='numeric' maxLength={4} placeholder='••••' value={pin}
-            onChange={e=>{setPin(e.target.value.replace(/\D/g,'').slice(0,4));setErr('')}}
-            onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-          />
-        </div>
-        {err&&<div style={{background:'#fdecea',border:'1px solid #fca5a5',borderRadius:10,padding:'10px 14px',fontSize:13,color:RED,marginBottom:16}}>{err}</div>}
-        <button style={{width:'100%',padding:14,borderRadius:12,fontSize:16,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:loading?.7:1}}
-          onClick={handleLogin} disabled={loading}>
-          {loading?'Loading...':'Enter the Club'}
-        </button>
-        <p style={{textAlign:'center',fontSize:12,color:MU,marginTop:16}}>New here? Just enter your name and the PIN to join.</p>
       </div>
     </div>
   )
