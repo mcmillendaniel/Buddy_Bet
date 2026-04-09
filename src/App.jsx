@@ -30,14 +30,14 @@ function LoginScreen({onLogin}){
     <div style={{background:SAND,minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column'}}>
       <div style={{background:G,padding:'32px 24px 24px',textAlign:'center'}}>
         <div style={{fontSize:52,marginBottom:8}}>&#9971;</div>
-        <div style={{color:W,fontSize:28,fontWeight:700,letterSpacing:'-0.5px'}}>Buddy Bet</div>
+        <div style={{color:W,fontSize:30,fontWeight:700,letterSpacing:'0.06em',fontFamily:"'Cinzel',serif",textTransform:'uppercase'}}>Buddy Bet</div>
         <div style={{color:'rgba(255,255,255,0.7)',fontSize:13,marginTop:4}}>Masters Weekend</div>
       </div>
       <div style={{padding:'32px 24px',flex:1}}>
         <div style={{marginBottom:20}}>
           <label style={{display:'block',fontSize:13,fontWeight:500,color:MU,marginBottom:8}}>Your first name</label>
           <input style={{width:'100%',padding:'13px 14px',border:'1.5px solid '+DS,borderRadius:12,fontSize:16,outline:'none',background:W,boxSizing:'border-box'}}
-            type='text' placeholder='e.g. Daniel' value={name}
+            type='text' value={name}
             onChange={e=>{setName(e.target.value);setErr('')}}
             onKeyDown={e=>e.key==='Enter'&&handleLogin()}
           />
@@ -112,7 +112,7 @@ function Home({me,pts,others,balWith,uns,onOpen}){
   return <div><div style={{fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>Your Bets</div>
   {pts.length===0&&<p style={{color:MU,fontSize:14}}>No bets yet — tap Add Bet to get started.</p>}
   {pts.map(p=>{const bal=balWith(p.id),u=uns(p.id);return <div key={p.id} style={{background:W,borderRadius:14,padding:14,marginBottom:10,border:'1px solid '+DS,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}} onClick={()=>onOpen(p)}><Av name={p.name} color={G}/><div style={{flex:1}}><div style={{fontWeight:500,fontSize:16}}>{p.name}</div>{u!==0&&<div style={{fontSize:12,color:MU,marginTop:2}}>Unsettled: <span style={{color:u>0?G:RED,fontWeight:600}}>{fmt(u)}</span></div>}</div><div style={{fontWeight:700,fontSize:17,color:bal>=0?G:RED}}>{fmt(bal)}</div></div>})}
-  {others.filter(p=>!pts.find(x=>x.id===p.id)).map(p=><div key={p.id} style={{background:W,borderRadius:14,padding:14,marginBottom:10,border:'1px solid '+DS,display:'flex',alignItems:'center',gap:12,cursor:'pointer',opacity:.55}} onClick={()=>onOpen(p)}><Av name={p.name} color={MU}/><div style={{flex:1}}><div style={{fontWeight:500,fontSize:16}}>{p.name}</div><div style={{fontSize:12,color:MU}}>No bets yet</div></div><div style={{color:MU}}>$0</div></div>)}
+  
   </div>
 }
 function Ledger({me,other,bets,bal,uns,onBack,onSettle,onProfile}){
@@ -171,14 +171,27 @@ function AddBet({me,players,onSave}){
   return <div><div style={{fontSize:11,fontWeight:600,color:G,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:10}}>New Bet</div>
   <div style={{background:W,borderRadius:14,padding:16,border:'1px solid '+DS}}>
     <label style={{display:'block',fontSize:13,color:MU,marginBottom:5}}>Opponent</label>
-    <select style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,background:'#fdfaf4',outline:'none',fontFamily:'inherit',boxSizing:'border-box'}} value={opp} onChange={e=>setOpp(e.target.value)}>
-      <option value=''>Select player...</option>{others.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-    </select>
+    <div style={{position:'relative'}}>
+          <input
+            style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,background:'#fdfaf4',outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}
+            type='text'
+            placeholder='Search player...'
+            value={opp}
+            onChange={e=>{setOpp(e.target.value);setOppId('')}}
+            autoComplete='off'
+          />
+          {opp.length>0&&!oppId&&(<div style={{position:'absolute',top:'100%',left:0,right:0,background:'#fdfaf4',border:'1.5px solid '+DS,borderRadius:10,zIndex:50,maxHeight:180,overflowY:'auto',marginTop:4}}>
+            {others.filter(p=>p.name.toLowerCase().includes(opp.toLowerCase())).map(p=>(
+              <div key={p.id} onClick={()=>{setOpp(p.name);setOppId(p.id)}} style={{padding:'10px 14px',cursor:'pointer',fontSize:15,borderBottom:'1px solid #e8dfc8'}}>{p.name}</div>
+            ))}
+            {others.filter(p=>p.name.toLowerCase().includes(opp.toLowerCase())).length===0&&<div style={{padding:'10px 14px',color:'#999',fontSize:14}}>No players found</div>}
+          </div>)}
+        </div>
     <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>Amount ($)</label>
     <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='number' min='0' step='0.5' placeholder='e.g. 5' value={amt} onChange={e=>setAmt(e.target.value)}/>
     <label style={{display:'block',fontSize:13,color:MU,marginBottom:5,marginTop:12}}>What&apos;s the bet?</label>
     <input style={{width:'100%',padding:'11px 12px',border:'1.5px solid '+DS,borderRadius:10,fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box',background:'#fdfaf4'}} type='text' placeholder='e.g. Scheffler hits the next green' value={desc} onChange={e=>setDesc(e.target.value)}/>
-    <button style={{width:'100%',marginTop:18,padding:13,borderRadius:12,fontSize:15,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:(!ok||saving)?.5:1}} onClick={async()=>{if(!ok)return;setSaving(true);await onSave({challenger_id:me.id,opponent_id:opp,amount:parseFloat(amt),description:desc,status:'open',winner_id:null});setOpp('');setAmt('');setDesc('');setSaving(false)}} disabled={!ok||saving}>
+    <button style={{width:'100%',marginTop:18,padding:13,borderRadius:12,fontSize:15,fontWeight:600,background:G,color:W,border:'none',cursor:'pointer',opacity:(!ok||saving)?.5:1}} onClick={async()=>{if(!ok)return;setSaving(true);await onSave({challenger_id:me.id,opponent_id:oppId,amount:parseFloat(amt),description:desc,status:'open',winner_id:null});setOpp('');setAmt('');setDesc('');setSaving(false)}} disabled={!ok||saving||!oppId}>
       {saving?'Saving...':'⛳ Lock It In'}
     </button>
   </div></div>
