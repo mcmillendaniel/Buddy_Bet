@@ -25,7 +25,7 @@ function LoginScreen({onLogin}){
   }
   return(
     <div style={{background:'#f5efe0',minHeight:'100vh',maxWidth:430,margin:'0 auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',paddingTop:'8vh'}}>
-      <img src="/iou_logo.webp" alt="IOU Logo" style={{width:200,height:200,objectFit:'contain',marginBottom:8,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',mixBlendMode:'multiply'}}/>
+      <img src="/buddybet_iou_icon_256.png" alt="IOU Logo" style={{width:200,height:200,objectFit:'contain',marginBottom:8,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',mixBlendMode:'multiply'}}/>
       <div style={{fontSize:38,fontWeight:800,color:'#1a5c38',letterSpacing:'0.05em',marginBottom:32,textAlign:'center',fontFamily:"Georgia,serif"}}>BUDDY BET</div>
       <div style={{width:'100%',maxWidth:360,background:'#fff',borderRadius:16,padding:'28px 24px',boxShadow:'0 2px 16px rgba(0,0,0,0.10)'}}>
         <div style={{marginBottom:20}}>
